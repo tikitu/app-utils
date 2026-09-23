@@ -7,8 +7,8 @@
 
 Small Swift libraries that came out of my apps, too small for a repo each.
 One Swift package, one product per library: depend on the package and name
-only the products you want. SwiftPM compiles just those; the rest cost a
-clone and nothing more. None has dependencies of its own.
+only the products you want. SwiftPM compiles just those, and fetches only
+the dependencies they need; the rest cost little more than a clone.
 
 | Library | Products | What it is |
 |---|---|---|

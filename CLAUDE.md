@@ -5,10 +5,6 @@
   one document, `docs/<Library>.md`. `README.md` is the index: add a row for
   each library.
 
-* **No dependencies outside this package.** A package dependency is resolved
-  by every consumer of every library here. If a library needs one, it needs a
-  repo of its own.
-
 * **Libraries do not know about the apps they came from**, nor about each
   other unless it is declared as a target dependency. Give anything new a
   general shape.
@@ -23,8 +19,7 @@
 
 * Swift: Swift 6 mode, default isolation nonisolated; mark `@MainActor`
   where needed. Filenames with spaces are the style (`Rule tree.swift`).
-  Tests use Swift Testing. Point-Free style — but no Point-Free libraries,
-  per the no-dependencies rule.
+  Tests use Swift Testing. Point-Free style.
 
 * Run `make fmt` after writing Swift and `make lint` before finishing: the
   formatter owns line breaks (`respectsExistingLineBreaks: false`).

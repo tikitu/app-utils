@@ -3,12 +3,9 @@
 import PackageDescription
 
 // Small libraries, one package. Each is its own product, and a consumer
-// compiles only the targets behind the products it names, so an unused
-// library costs a clone and nothing more. Each library is documented in
+// compiles only the targets behind the products it names, and fetches only
+// the dependencies those targets need. Each library is documented in
 // docs/<Library>.md; README.md is the index.
-//
-// No library has dependencies outside this package. Keep it that way: a
-// dependency here would be resolved by every consumer of every library.
 //
 // Every target: Swift 6 language mode, and default actor isolation `nil`
 // (nonisolated) — `@MainActor` is marked where it is needed.
