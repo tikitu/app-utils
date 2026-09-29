@@ -30,6 +30,6 @@ bumps the major version (or, before 1.0, the minor). Pin with your
 
 ## Working here
 
-`make test`, `make fmt`, `make lint`. See `CLAUDE.md` for the rules.
+`make test`, `make fmt`, `make lint`. See `AGENTS.md` for the rules.
 
 MIT licence.

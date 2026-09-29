@@ -1,0 +1,4 @@
+# Conventions this project takes from app-tooling, beyond what peru.yaml
+# records. docs/app-tooling/pattern-imports/README.md explains this file.
+
+[patterns.pattern-imports]

@@ -23,3 +23,13 @@
 
 * Run `make fmt` after writing Swift and `make lint` before finishing: the
   formatter owns line breaks (`respectsExistingLineBreaks: false`).
+
+## Conventions from app-tooling
+
+Some of this project's tooling is imported from app-tooling by peru:
+`peru.yaml` says what, and at which commit. **Never edit an imported file
+in place**; the change belongs in app-tooling. How to apply a new pattern,
+update, or work against a local checkout is in
+`docs/app-tooling/pattern-imports/README.md`. `app-tooling.toml` records
+this project's parameters, deliberate deviations and declined patterns;
+read it before changing anything a pattern covers.
