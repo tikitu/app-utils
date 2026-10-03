@@ -14,12 +14,12 @@ Two products: `BooleanRules` (expressions and syntax, no UI) and
 
 | | |
 |---|---|
-| `BooleanExpression<Term>` | `.term`, `.not`, `.all`, `.any`; `evaluate`, `map`, `normalized` |
+| `BooleanExpression<Term>` | `.term`, `.not`, `.all`, `.any`; `evaluate`, `map`, `normalized`, `and` |
 | `BooleanTerm` | conform your term type: `read(field:value:)` and `written` |
 | `BooleanExpression.parse(_:)`, `.description` | the text syntax, both ways |
 | `RuleSchema` | describe your fields for the editor: titles, comparisons, value menus or text, row ↔ term |
 | `RuleTree` | the editor's model: groups (all / any / none / not all) of rules (is / is not), nested; pure, testable |
-| `RuleEditor` (BooleanRulesUI) | the SwiftUI editor, bound to a `BooleanExpression` |
+| `RuleEditor` (BooleanRulesUI) | the SwiftUI editor, bound to a `BooleanExpression`, with an optional locked `pinned:` part |
 
 ## The syntax
 
@@ -50,6 +50,20 @@ keeps its own `RuleTree` so rows keep their identity while edited; a rule not
 yet filled in (your schema's `term(for:)` returns `nil`) and grouping the
 expression would flatten away both survive, because the tree's expression is
 compared with yours *normalised*.
+
+**Pinned rules.** `RuleEditor(expression:pinned:schema:)` shows `pinned`
+above the rules, locked — disabled controls, a lock where − and + would be.
+It is the part of a filter that belongs to the screen rather than the
+person: a list of one source's items is the list of everything with
+`source:x` pinned. It is not in the bound expression; filter by
+`pinned.and(expression)`. A pinned *all* shows as bare rows; anything else as
+a locked group.
+
+**Narrow widths.** A group's header and each rule are on one line where
+there is room. Where there is not — a phone — the header's buttons, and a
+rule's value, move to a line of their own (`ViewThatFits`). On iOS, put the
+editor outside a `List` or `Form`: a row holding several buttons fires all
+of them on a tap.
 
 ## Using it
 

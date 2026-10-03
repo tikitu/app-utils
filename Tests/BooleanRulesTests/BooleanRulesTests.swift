@@ -205,3 +205,17 @@ struct RuleTrees {
         #expect(tree.expression(schema: schema).description == "a")
     }
 }
+
+@Suite
+struct Pinning {
+    @Test
+    func `a pinned part and an edited part hold together, and pinning nothing changes nothing`()
+        throws
+    {
+        let pinned = try Expr.parse("colour:red")
+        #expect(pinned.and(try Expr.parse("a or b")) == (try Expr.parse("colour:red (a or b)")))
+        #expect(pinned.and(try Expr.parse("a b")) == (try Expr.parse("colour:red a b")))
+        #expect(Expr.everything.and(w("a")) == w("a"))
+        #expect(w("a").and(.everything) == w("a"))
+    }
+}

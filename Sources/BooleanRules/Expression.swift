@@ -73,3 +73,9 @@ extension BooleanExpression {
         }
     }
 }
+
+extension BooleanExpression {
+    /// Both this and `other`: how a pinned part of a filter and the part a
+    /// person edits combine. Normalised, so pinning nothing changes nothing.
+    public func and(_ other: Self) -> Self { Self.all([self, other]).normalized }
+}
