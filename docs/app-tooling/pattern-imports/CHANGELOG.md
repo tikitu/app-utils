@@ -1,6 +1,6 @@
 # pattern-imports changelog
 
-## Unreleased
+## v0.1.0 (2026-10-05)
 
 Agent instructions live in `AGENTS.md` only. A project that has a
 `CLAUDE.md` moves its content into `AGENTS.md` and deletes it (`apply.md`,
