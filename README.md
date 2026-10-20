@@ -13,6 +13,7 @@ the dependencies they need; the rest cost little more than a clone.
 | Library | Products | What it is |
 |---|---|---|
 | [BooleanRules](docs/BooleanRules.md) | `BooleanRules`, `BooleanRulesUI` | *and* / *or* / *not* filters over terms you define: a text syntax and a SwiftUI rule editor |
+| [CloudKitSyncConfiguration](docs/CloudKitSyncConfiguration.md) | `CloudKitSyncConfiguration` | guards for CloudKit sync: whether this build may sync, and whether the sync state on disk belongs to its environment |
 
 ```swift
 // Package.swift

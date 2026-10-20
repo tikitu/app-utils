@@ -16,6 +16,7 @@ let package = Package(
     products: [
         .library(name: "BooleanRules", targets: ["BooleanRules"]),
         .library(name: "BooleanRulesUI", targets: ["BooleanRulesUI"]),
+        .library(name: "CloudKitSyncConfiguration", targets: ["CloudKitSyncConfiguration"]),
     ],
     targets: [
         // BooleanRules — docs/BooleanRules.md
@@ -23,4 +24,10 @@ let package = Package(
         .target(name: "BooleanRulesUI", dependencies: ["BooleanRules"], swiftSettings: shared),
         .testTarget(
             name: "BooleanRulesTests", dependencies: ["BooleanRules"], swiftSettings: shared),
+
+        // CloudKitSyncConfiguration — docs/CloudKitSyncConfiguration.md
+        .target(name: "CloudKitSyncConfiguration", swiftSettings: shared),
+        .testTarget(
+            name: "CloudKitSyncConfigurationTests", dependencies: ["CloudKitSyncConfiguration"],
+            swiftSettings: shared),
     ])
