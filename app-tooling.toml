@@ -2,3 +2,19 @@
 # records. docs/app-tooling/pattern-imports/README.md explains this file.
 
 [patterns.pattern-imports]
+
+[declined.privileged-helper]
+as_of = "v0.1.0"
+reason = "library, not an app"
+
+[declined.instruments-profiling]
+as_of = "v0.1.0"
+reason = "library, not an app"
+
+[declined.testflight]
+as_of = "v0.1.0"
+reason = "library, not an app"
+
+[declined.git-commit-stamp]
+as_of = "v0.1.0"
+reason = "library, not an app"
