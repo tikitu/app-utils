@@ -99,8 +99,10 @@ because it may change enough later to be worth another look.
 | `app-tooling-check` | Fails, naming them, if any imported file differs from what `rev:` has: edited or deleted in this project, or an update half done. Leaves the tree as it was |
 | `app-tooling-update` | Runs the check, and refuses if it fails. Otherwise moves `rev:` to the newest commit of `reup:`, imports it, and prints the `CHANGELOG.md` entries the update added: the catch-up steps |
 
-Both need a clean tree, and `uv` (`brew install uv`), which runs peru at a
-pinned version. Both take `APP_TOOLING_LOCAL` (below).
+Both need a clean tree, with one exception: `peru.yaml` may have a changed
+`reup:` line, and no other change, so that moving to another release is one
+edit and one update. Both need `uv` (`brew install uv`), which runs peru at
+a pinned version, and take `APP_TOOLING_LOCAL` (below).
 
 ## Applying a new pattern (for an agent)
 
@@ -134,8 +136,11 @@ pinned version. Both take `APP_TOOLING_LOCAL` (below).
 3. Commit the update and the catch-up together, naming the old and new
    commits.
 
-To move from a branch to a release, once the branch has been released, set
-`reup:` to the tag and update as above.
+To move to a new release, or from a branch to a release once the branch
+has been released, set `reup:` to the tag, leave it uncommitted, and update
+as above: `make app-tooling-update` accepts a tree whose only change is that
+line, and the commit then holds the `reup:` edit, the new `rev:`, the
+imports and the catch-up together.
 
 ## Local changes to imported files
 
