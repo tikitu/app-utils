@@ -14,6 +14,7 @@ the dependencies they need; the rest cost little more than a clone.
 |---|---|---|
 | [BooleanRules](docs/BooleanRules.md) | `BooleanRules`, `BooleanRulesUI` | *and* / *or* / *not* filters over terms you define: a text syntax and a SwiftUI rule editor |
 | [CloudKitSyncConfiguration](docs/CloudKitSyncConfiguration.md) | `CloudKitSyncConfiguration` | guards for CloudKit sync: whether this build may sync, and whether the sync state on disk belongs to its environment |
+| [CommandInbox](docs/CommandInbox.md) | `CommandInbox` | a script drives the running app through its own commands, from a JSON file and a Darwin notification, strictly decoded, and reads back what each did |
 
 ```swift
 // Package.swift
