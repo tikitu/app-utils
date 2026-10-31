@@ -36,7 +36,10 @@ when the gap began, the last time it was done. Everything up to the last
 that closes — the thing was done — leaves a cycle the app no longer
 reports open, and its notifications go, pending and delivered, snoozes
 included. Notifications without the prefix are never touched, so other
-kinds of notification can live beside these.
+kinds of notification can live beside these. Two kinds in one app need
+prefixes where neither starts the other (`soak/` and `check/`, not
+`reminder/` and `reminder/check/`): reconciling under `reminder/` would
+remove every `reminder/check/` notification as stale.
 
 Stages are the app's strings (IntervalGoals' `Reminder.Stage.rawValue`
 works) and must not contain `/`. A snooze has `snoozed` in place of the
@@ -74,7 +77,9 @@ In order, it:
 1. drops wanted notifications that fire at or before `now`: a past stage
    is not sent late;
 2. keeps the soonest `limit` (default `pendingLimit`, 64, the system's
-   cap; lower it to leave room for other notifications);
+   cap; lower it to leave room for other notifications). The limit
+   counts only what reconcile adds: open snoozes and other prefixes'
+   notifications are pending on top of it;
 3. removes pending notifications under the prefix that are not kept,
    except a snooze in an open cycle, which no schedule contains;
 4. adds every kept one. Adding under an existing identifier replaces it,
