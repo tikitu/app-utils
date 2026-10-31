@@ -18,6 +18,8 @@ let package = Package(
         .library(name: "BooleanRulesUI", targets: ["BooleanRulesUI"]),
         .library(name: "CloudKitSyncConfiguration", targets: ["CloudKitSyncConfiguration"]),
         .library(name: "CommandInbox", targets: ["CommandInbox"]),
+        .library(name: "IntervalGoals", targets: ["IntervalGoals"]),
+        .library(name: "ReminderScheduling", targets: ["ReminderScheduling"]),
     ],
     targets: [
         // BooleanRules — docs/BooleanRules.md
@@ -36,4 +38,15 @@ let package = Package(
         .target(name: "CommandInbox", swiftSettings: shared),
         .testTarget(
             name: "CommandInboxTests", dependencies: ["CommandInbox"], swiftSettings: shared),
+
+        // IntervalGoals — docs/IntervalGoals.md
+        .target(name: "IntervalGoals", swiftSettings: shared),
+        .testTarget(
+            name: "IntervalGoalsTests", dependencies: ["IntervalGoals"], swiftSettings: shared),
+
+        // ReminderScheduling — docs/ReminderScheduling.md
+        .target(name: "ReminderScheduling", swiftSettings: shared),
+        .testTarget(
+            name: "ReminderSchedulingTests", dependencies: ["ReminderScheduling"],
+            swiftSettings: shared),
     ])
