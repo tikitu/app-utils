@@ -42,7 +42,7 @@ prefixes where neither starts the other (`soak/` and `check/`, not
 remove every `reminder/check/` notification as stale.
 
 Stages are the app's strings (IntervalGoals' `Reminder.Stage.rawValue`
-works) and must not contain `/`. A snooze has `snoozed` in place of the
+works, whatever its `ReminderStages` shares) and must not contain `/`. A snooze has `snoozed` in place of the
 stage, so snoozing again replaces it.
 
 ## Reconciling

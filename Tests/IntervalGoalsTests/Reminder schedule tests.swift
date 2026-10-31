@@ -159,30 +159,25 @@ struct ReminderScheduleTests {
 
     @Test
     func `across the clocks changing, the three stay in order, distinct and convenient`() {
-        let starts = (21...30).map { (3, $0) } + (18...27).map { (10, $0) }
-        for (month, day) in starts {
-            for hour in 0..<24 {
-                for cadence in [
-                    Cadence(days: 2), Cadence(days: 3), Cadence(weeks: 1), Cadence(days: 25),
+        for cadence in [Cadence(days: 2), Cadence(days: 3), Cadence(weeks: 1), Cadence(days: 25)] {
+            for since in startsAcrossTheClocksChanging(for: cadence) {
+                for times in [
+                    ReminderTimes.all, ReminderTimes([.morning]),
+                    ReminderTimes([.midday, .evening]),
                 ] {
-                    for times in [
-                        ReminderTimes.all, ReminderTimes([.morning]),
-                        ReminderTimes([.midday, .evening]),
-                    ] {
-                        let sent = sendTimes(cadence, times, since: date(month, day, hour, 17))
-                        let label = "\(cadence) \(times) \(month)/\(day) \(hour):17"
-                        #expect(sent.count == 3, "\(label)")
-                        #expect(sent == sent.sorted() && Set(sent).count == 3, "\(label)")
-                        for sendAt in sent {
-                            let local = calendar.dateComponents([.hour, .minute], from: sendAt)
-                            #expect(
-                                ReminderTime.allCases.contains {
-                                    $0.hour == local.hour && $0.minute == local.minute
-                                }, "\(label)")
-                        }
-                        let due = calendar.dateComponents([.hour], from: sent[1]).hour
-                        #expect(times.times.contains { $0.hour == due }, "\(label)")
+                    let sent = sendTimes(cadence, times, since: since)
+                    let label = "\(cadence) \(times) \(since)"
+                    #expect(sent.count == 3, "\(label)")
+                    #expect(sent == sent.sorted() && Set(sent).count == 3, "\(label)")
+                    for sendAt in sent {
+                        let local = calendar.dateComponents([.hour, .minute], from: sendAt)
+                        #expect(
+                            ReminderTime.allCases.contains {
+                                $0.hour == local.hour && $0.minute == local.minute
+                            }, "\(label)")
                     }
+                    let due = calendar.dateComponents([.hour], from: sent[1]).hour
+                    #expect(times.times.contains { $0.hour == due }, "\(label)")
                 }
             }
         }
@@ -211,5 +206,25 @@ struct ReminderTimesTests {
         #expect(times == ReminderTimes(morning: false, midday: true, evening: true))
         #expect(
             ReminderTime.allCases.map { "\($0.hour):\($0.minute)" } == ["8:30", "12:30", "18:30"])
+    }
+}
+
+/// Every other hour of the starts that put the due moment on the day before or the
+/// day of each clock change in 2026 (29 March, 25 October, Amsterdam), at
+/// 17 past: the starts whose reminders land around the change.
+func startsAcrossTheClocksChanging(for cadence: Cadence) -> [Date] {
+    [amsterdam.date(2026, 3, 29), amsterdam.date(2026, 10, 25)].flatMap { change in
+        let dueFrom = amsterdam.date(byAdding: .day, value: -1, to: change)!
+        let start = amsterdam.date(byAdding: cadence.negated.dateComponents, to: dueFrom)!
+        return (0..<24).map { start.addingTimeInterval(TimeInterval($0) * 7_200 + 17 * 60) }
+    }
+}
+
+extension Cadence {
+    /// Every field negated, to step back from a date.
+    fileprivate var negated: Cadence {
+        Cadence(
+            years: -years, months: -months, weeks: -weeks, days: -days, hours: -hours,
+            minutes: -minutes)
     }
 }

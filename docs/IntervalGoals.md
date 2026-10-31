@@ -19,8 +19,10 @@ the time zone) the user lives in. The notifications themselves are
 | `GoalProgress` | the gap as a ratio of a reference, against a target band: `ratio`, `target`, `position`, `pressure` |
 | `GapHistory` | from past events: the `usual` gap (median of the last 10, once there are 3) and the `longest` |
 | `ReminderSchedule` | `reminders(every:preferring:since:calendar:)`: a gap's three reminders |
-| `Reminder`, `Reminder.Stage` | one reminder: its stage (95%, 100%, 105%), when that is reached and when to send it |
-| `ReminderTime`, `ReminderTimes` | the convenient times (8:30, 12:30, 18:30) and which of them are preferred |
+| `Reminder`, `Reminder.Stage` | one reminder: its stage (approaching, due, overdue), when that is reached and when to send it |
+| `ReminderStages` | the shares of the cadence each stage is sent at; `standard` is 95%, 100%, 105% |
+| `ConvenientTime` | a time of day reminders may move to, with a stable name; `standard` is 8:30, 12:30, 18:30 |
+| `ReminderTime`, `ReminderTimes` | the three standard times as an enum, and which of them are preferred |
 
 ## The model
 
@@ -69,15 +71,16 @@ all completed gaps; the open one is not in it.
 ## Reminders
 
 `ReminderSchedule.reminders(every:preferring:since:calendar:)` gives three
-reminders per gap, as it reaches 95% (`approaching`), 100% (`due`) and
+reminders per gap, by default as it reaches 95% (`approaching`), 100% (`due`) and
 105% (`overdue`) of the cadence. They are measured from `since`, so an
 event starts a fresh set: an event at 102% means 105% is never reached,
 and the new set does not contain it. Nothing special does that; schedule
 from the new last time and reconcile (ReminderScheduling).
 
 A cadence of a day or less is reminded at the exact moments. A longer one
-(`isLongerThanADay`) moves each reminder to a convenient time,
-`ReminderTime`: 8:30, 12:30 or 18:30, local to the calendar.
+(`isLongerThanADay`) moves each reminder to a convenient time, by default
+8:30, 12:30 or 18:30, local to the calendar. Both the stages and the
+times can be your own (below).
 
 - **due** goes to the preferred time nearest the moment 100% is reached;
 - **approaching** to the nearest time *before* that, **overdue** to the
@@ -95,9 +98,42 @@ every hour of the day, across both clock changes). Moving to a
 convenient time can move a reminder by up to half a day, more for a lone
 preference. `reached` keeps the exact moment, for display.
 
-`ReminderTimes` holds which times are preferred; `all` means "whichever is
-nearest", and an empty set is read as `all`. It is a flag per time so
-storage can keep a column each.
+`ReminderTimes` holds which standard times are preferred; `all` means
+"whichever is nearest", and an empty set is read as `all`. It is a flag
+per time so storage can keep a column each.
+
+### Your own stages and times
+
+The 95/100/105% stages and the three times are defaults. Pass your own:
+
+```swift
+let times = [
+    ConvenientTime("early", hour: 7, minute: 0),
+    ConvenientTime("lunch", hour: 13, minute: 15),
+    ConvenientTime("late", hour: 21, minute: 45),
+]
+ReminderSchedule.reminders(
+    every: cadence, preferring: [times[1]], among: times,
+    stages: ReminderStages(due: 1, overdue: 1.25),  // no early warning
+    since: last, calendar: calendar)
+```
+
+- `stages`: a share for `due`, and optionally `approaching` before it and
+  `overdue` after it. Leaving one out sends no reminder for it. They must
+  be positive and in order, or there are no reminders (`isValid`).
+- `among` is every time the app offers; `preferring` the ones this
+  schedule prefers (none valid means all of `among`). Close stages fall
+  back on `among`, as above. A time outside 0:00–23:59 is skipped; with
+  none left, reminders go at the exact moments.
+- "A day or more apart" is the closest pair of stages present.
+- `name` is what storage and identifiers should keep for a preference:
+  stable, never renamed. `ReminderTime`'s raw values are the standard
+  times' names, so `ReminderTimes.convenientTimes` gives the same
+  schedule as passing `ReminderTimes`.
+
+The order-and-distinct guarantee holds for any valid stages and times
+(tested with four uneven times, one in the hour the clocks skip, and
+several stage sets, across both clock changes).
 
 ## Calendar arithmetic
 
