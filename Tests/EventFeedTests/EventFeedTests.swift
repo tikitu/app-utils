@@ -21,6 +21,13 @@ struct ByteIdentity {
                 base: try scratchDirectory(), source: source, bundle: bundle)
             try writer.add(inEffect: inputs)
             try writer.retract(removed: inputs[0].id, recordedAt: someTime, zone: "UTC")
+            // The chains: delete, restore, delete again; an edit B → D → B.
+            try writer.restore(inputs[0].id, recordedAt: someTime.addingTimeInterval(1), zone: nil)
+            try writer.retract(
+                removed: inputs[0].id, recordedAt: someTime.addingTimeInterval(2), zone: nil)
+            let edited = event(row: "B", subject: "edited", zone: nil, payload: [:])
+            try writer.replace(removed: inputs[1].id, with: edited, recordedAt: someTime, zone: nil)
+            try writer.replace(removed: edited.id, with: inputs[1], recordedAt: someTime, zone: nil)
             try writer.name(subject: "subject-1", name: "Water the trees", since: someTime)
             files.append(writer.url)
         }
@@ -407,14 +414,16 @@ func demoFeed() throws {
         occurredAt: someTime.addingTimeInterval(-3600), recordedAt: someTime.addingTimeInterval(5),
         zone: nil)
     try writer.add(inEffect: [done])
-    // A retime: retract the old id, add the new one, in that order.
-    try writer.retract(removed: done.id, recordedAt: someTime.addingTimeInterval(60), zone: nil)
-    try writer.add(inEffect: [retimed])
+    // A retime there and back: retract the old id, add the new one.
+    try writer.replace(
+        removed: done.id, with: retimed, recordedAt: someTime.addingTimeInterval(60), zone: nil)
+    try writer.replace(
+        removed: retimed.id, with: done, recordedAt: someTime.addingTimeInterval(120), zone: nil)
     try writer.name(subject: "water", name: "Water the trees", since: someTime)
 
     let reader = try FeedReader(url: writer.url)
     print("FeedReader meta:", reader.meta)
     for event in try reader.events() { print("FeedReader event:", event) }
     print("FeedReader retracted:", Retractions.retracted(try reader.events()))
-    print("FeedReader differences:", try writer.differences(inEffect: [retimed]))
+    print("FeedReader differences:", try writer.differences(inEffect: [done]))
 }

@@ -3,9 +3,10 @@ import SQLite3
 
 /// The one writer of one app's feed. Appends, and never updates or deletes.
 ///
-/// It has two ways to add a row: ``add(inEffect:)``, for the events the
-/// source has now, and ``retract(removed:recordedAt:zone:)``, for a removal
-/// the source's own write path reports. It never retracts by comparing the
+/// It adds rows two ways: ``add(inEffect:)``, for the events the source has
+/// now, and ``retract(removed:recordedAt:zone:)``,
+/// ``restore(_:recordedAt:zone:)`` and ``replace(removed:with:recordedAt:zone:)``
+/// for a change the source's own write path reports. It never retracts by comparing the
 /// feed with the source: a source that is empty or partial (a reinstall, a
 /// bug) would become a mass retraction. ``differences(inEffect:)`` reports
 /// that comparison and changes nothing.
@@ -68,20 +69,54 @@ public final class FeedWriter {
         }
     }
 
-    /// Appends the retraction of feed event `removed`, which the caller's
-    /// own write path reports as removed (deleted, or about to be edited),
-    /// and returns it; retracting an id again appends nothing. `recordedAt`
-    /// and `zone` are the source's own where it records a removal, and
-    /// otherwise the moment and zone of the removal on the one device it
-    /// was made on.
+    /// Makes feed event `removed` no longer in effect, because the caller's
+    /// own write path reports it removed (deleted, or about to be edited).
+    /// Returns the retraction that now retracts it: the one appended, or the
+    /// one already in effect, in which case nothing is appended.
+    ///
+    /// A retraction's id depends only on what it retracts, so an id has one
+    /// chain of retractions: its retraction, that one's retraction (a
+    /// restore), and so on. This appends at the end of the chain, so delete,
+    /// restore, delete again appends three rows and leaves the event
+    /// retracted. `recordedAt` and `zone` are the source's own where it
+    /// records a removal, and otherwise the moment and zone of the removal
+    /// on the one device it was made on.
     @discardableResult
     public func retract(
         removed: UUID, recordedAt: Date, zone: String?
     ) throws(FeedError) -> FeedEvent {
-        let retraction = FeedEvent.retraction(
-            source: source, of: removed, recordedAt: recordedAt, zone: zone)
-        try insert(retraction)
-        return retraction
+        try connection.transaction { () throws(FeedError) in
+            try retractInTransaction(removed, recordedAt: recordedAt, zone: zone)
+        }
+    }
+
+    /// Puts a retracted feed event `restored` back in effect, because the
+    /// caller's own write path reports it back (an undone delete), by
+    /// retracting the retraction in effect over it. Returns the retraction
+    /// that now restores it, or `nil` if it was never retracted; nothing is
+    /// appended unless it was retracted. `recordedAt` and `zone` as for
+    /// ``retract(removed:recordedAt:zone:)``.
+    @discardableResult
+    public func restore(
+        _ restored: UUID, recordedAt: Date, zone: String?
+    ) throws(FeedError) -> FeedEvent? {
+        try connection.transaction { () throws(FeedError) in
+            try restoreInTransaction(restored, recordedAt: recordedAt, zone: zone)
+        }
+    }
+
+    /// An edit of a frozen column, in one transaction: retracts `removed`,
+    /// adds `replacement`, and restores `replacement` if the feed had it
+    /// retracted, so editing A to B and back to A leaves A in effect.
+    public func replace(
+        removed: UUID, with replacement: FeedEvent, recordedAt: Date, zone: String?
+    ) throws(FeedError) {
+        if replacement.isRetraction { throw .retractionPassedToAdd(replacement.id) }
+        try connection.transaction { () throws(FeedError) in
+            try retractInTransaction(removed, recordedAt: recordedAt, zone: zone)
+            try insert(replacement)
+            try restoreInTransaction(replacement.id, recordedAt: recordedAt, zone: zone)
+        }
     }
 
     /// Appends a version of `subject`'s name, unless that exact version is
@@ -120,6 +155,55 @@ public final class FeedWriter {
             onlyInFeed: sorted(inEffect.subtracting(supplied)),
             onlySupplied: sorted(supplied.subtracting(rows)),
             suppliedButRetracted: sorted(supplied.intersection(retracted)))
+    }
+
+    @discardableResult
+    private func retractInTransaction(
+        _ removed: UUID, recordedAt: Date, zone: String?
+    ) throws(FeedError) -> FeedEvent {
+        let chain = try retractionChain(of: removed)
+        // An odd chain ends in a retraction in effect over `removed`.
+        if chain.count % 2 == 1, let last = chain.last { return last }
+        return try appendRetraction(
+            of: chain.last?.id ?? removed, recordedAt: recordedAt, zone: zone)
+    }
+
+    @discardableResult
+    private func restoreInTransaction(
+        _ restored: UUID, recordedAt: Date, zone: String?
+    ) throws(FeedError) -> FeedEvent? {
+        let chain = try retractionChain(of: restored)
+        guard let last = chain.last else { return nil }
+        if chain.count % 2 == 0 { return last }
+        return try appendRetraction(of: last.id, recordedAt: recordedAt, zone: zone)
+    }
+
+    /// The retractions of `id`, of that retraction, and so on, as far as the
+    /// feed has them. The fold makes `id` in effect exactly when the chain's
+    /// length is even.
+    private func retractionChain(of id: UUID) throws(FeedError) -> [FeedEvent] {
+        var chain: [FeedEvent] = []
+        var current = id
+        while true {
+            let next = FeedEvent.retractionID(source: source, of: current)
+            guard
+                let row = try connection.rows(
+                    "SELECT \(FeedSchema.eventColumns) FROM feed_events WHERE id = ? AND retracts = ?",
+                    [.text(next.uuidString), .text(current.uuidString)]
+                ).first
+            else { return chain }
+            chain.append(try FeedSchema.event(row))
+            current = next
+        }
+    }
+
+    private func appendRetraction(
+        of id: UUID, recordedAt: Date, zone: String?
+    ) throws(FeedError) -> FeedEvent {
+        let retraction = FeedEvent.retraction(
+            source: source, of: id, recordedAt: recordedAt, zone: zone)
+        try insert(retraction)
+        return retraction
     }
 
     @discardableResult
@@ -184,9 +268,10 @@ public final class FeedWriter {
     /// healthy feed and the retractions in it.
     private static func isReplaceable(_ error: FeedError) -> Bool {
         switch error {
-        case .notAFeed, .corruptRow: true
+        case .notAFeed: true
         case .sqlFailed(let code, _): [SQLITE_CORRUPT, SQLITE_NOTADB].contains(code & 0xFF)
-        case .couldNotOpen, .newerSchema, .belongsToAnother, .retractionPassedToAdd: false
+        case .couldNotOpen, .newerSchema, .belongsToAnother, .retractionPassedToAdd, .corruptRow:
+            false
         }
     }
 }

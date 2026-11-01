@@ -85,9 +85,8 @@ struct Review {
     }
 
     /// Delete, undo (a restore: retract the retraction), delete again. The
-    /// second delete must leave the event retracted. It does not: the
-    /// retraction's id depends only on its target, so the second
-    /// `retract(removed:)` is the first row again, already retracted.
+    /// second delete must leave the event retracted: `retract(removed:)`
+    /// appends at the end of the id's retraction chain.
     @Test
     func deleteRestoreDeleteLeavesTheEventRetracted() throws {
         let writer = try FeedWriter(base: try scratchDirectory(), source: source, bundle: bundle)
@@ -96,10 +95,9 @@ struct Review {
         let deletion = try writer.retract(removed: a.id, recordedAt: someTime, zone: nil)
         try writer.retract(removed: deletion.id, recordedAt: someTime, zone: nil)
         try writer.retract(removed: a.id, recordedAt: someTime.addingTimeInterval(60), zone: nil)
-        let retracted = Retractions.retracted(try FeedReader(url: writer.url).events())
-        withKnownIssue("retract(removed:) is a no-op on an id whose retraction is retracted") {
-            #expect(retracted.contains(a.id))
-        }
+        let events = try FeedReader(url: writer.url).events()
+        #expect(events.count == 4)
+        #expect(Retractions.retracted(events).contains(a.id))
     }
 
     /// A reader holding the file open while the writer appends sees the new

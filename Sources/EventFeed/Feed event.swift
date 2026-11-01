@@ -59,10 +59,13 @@ public struct FeedEvent: Hashable, Sendable {
         source: String, of retracted: UUID, recordedAt: Date, zone: String?
     ) -> FeedEvent {
         FeedEvent(
-            id: stableIdentifier(from: "\(source)/retracts/\(retracted.uuidString)"),
-            kind: retractionKind, subject: nil, occurredAt: nil,
-            recordedAt: FeedTime.normalized(recordedAt), zone: zone, retracts: retracted,
-            payload: [:])
+            id: retractionID(source: source, of: retracted), kind: retractionKind, subject: nil,
+            occurredAt: nil, recordedAt: FeedTime.normalized(recordedAt), zone: zone,
+            retracts: retracted, payload: [:])
+    }
+
+    static func retractionID(source: String, of retracted: UUID) -> UUID {
+        stableIdentifier(from: "\(source)/retracts/\(retracted.uuidString)")
     }
 
     init(
