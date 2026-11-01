@@ -100,6 +100,34 @@ struct Review {
         #expect(Retractions.retracted(events).contains(a.id))
     }
 
+    /// The chain cases keep byte identity: two writers in two directories,
+    /// given delete, restore, delete, a retime there and back, and the
+    /// diagnostic's remedy, write the same rows, and the fold agrees.
+    @Test
+    func chainsAreByteIdenticalAcrossWriters() throws {
+        let a = event(row: "A")
+        let b = event(row: "A", occurredAt: someTime.addingTimeInterval(-3600))
+        let c = event(row: "C")
+        var files: [URL] = []
+        for _ in 0..<2 {
+            let writer = try FeedWriter(
+                base: try scratchDirectory(), source: source, bundle: bundle)
+            try writer.add(inEffect: [a, c])
+            try writer.retract(removed: c.id, recordedAt: someTime, zone: nil)
+            try writer.restore(c.id, recordedAt: someTime.addingTimeInterval(1), zone: nil)
+            try writer.retract(removed: c.id, recordedAt: someTime.addingTimeInterval(2), zone: nil)
+            try writer.replace(removed: a.id, with: b, recordedAt: someTime, zone: "UTC")
+            try writer.replace(removed: b.id, with: a, recordedAt: someTime, zone: "UTC")
+            try writer.retract(removed: b.id, recordedAt: someTime, zone: "UTC")
+            files.append(writer.url)
+        }
+        let events = try FeedReader(url: files[0]).events()
+        let ids = Set(events.filter { !$0.isRetraction }.map(\.id))
+        #expect(ids.subtracting(Retractions.retracted(events)) == [a.id])
+        #expect(
+            try rawRows("feed_events", in: files[0]) == (try rawRows("feed_events", in: files[1])))
+    }
+
     /// A reader holding the file open while the writer appends sees the new
     /// row on its next read; the writer can reopen while the reader holds it.
     @Test
