@@ -161,7 +161,7 @@ version and is bumped with the tag.
 `feed_meta` in one transaction. On an existing file it runs
 `PRAGMA quick_check` and compares the schema with the above, verbatim.
 
-- A file that cannot be opened, fails the check, or has any other schema
+- A file that is not a database, fails the check, or has any other schema
   is **deleted and created again** (`recreated` says so): the feed is a
   projection, and the next `add(inEffect:)` rebuilds it. What a rebuild
   cannot bring back is a retraction the source does not record (a hard
@@ -169,8 +169,11 @@ version and is bumped with the tag.
 - A file whose `schema` is newer throws `newerSchema(found:known:)`, and
   one made for another `source` or `bundle` throws `belongsToAnother`.
   Neither is touched.
-- `SQLITE_BUSY` (another process writing for more than five seconds)
-  throws; it is never taken for damage.
+- A file that cannot be opened *now* throws and is left alone:
+  `SQLITE_BUSY` (another process writing for more than five seconds),
+  `SQLITE_CANTOPEN` or a failed open (permissions, or data protection on
+  a locked device). None of these is damage, and deleting would lose the
+  retractions in a healthy feed.
 
 `FeedReader` reads `feed_meta` first and throws `newerSchema` naming both
 numbers ("feed schema 2 is newer than this library knows (1)"). Opening a

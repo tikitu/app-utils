@@ -24,9 +24,10 @@ public final class FeedWriter {
 
     /// Opens, or creates, `<base>/Feeds/<bundle>.sqlite`.
     ///
-    /// A file that cannot be opened, fails SQLite's integrity check, or has
+    /// A file that is not a database, fails SQLite's integrity check, or has
     /// any schema but this library's is deleted and created again. A file
-    /// with a newer schema, or made for another source or bundle, is left
+    /// with a newer schema, made for another source or bundle, or that
+    /// cannot be opened now (permissions, data protection, busy) is left
     /// alone and the open throws.
     public init(base: URL, source: String, bundle: String) throws(FeedError) {
         precondition(!source.isEmpty && !source.contains("/"), "a source name has no slash")
@@ -178,12 +179,14 @@ public final class FeedWriter {
     }
 
     /// Damage, not someone else's file: worth replacing with an empty feed.
+    /// A file that cannot be opened at this moment is not damage: a locked
+    /// device's data protection or a permission would otherwise delete a
+    /// healthy feed and the retractions in it.
     private static func isReplaceable(_ error: FeedError) -> Bool {
         switch error {
-        case .couldNotOpen, .notAFeed, .corruptRow: true
-        case .sqlFailed(let code, _):
-            [SQLITE_CORRUPT, SQLITE_NOTADB, SQLITE_CANTOPEN].contains(code & 0xFF)
-        case .newerSchema, .belongsToAnother, .retractionPassedToAdd: false
+        case .notAFeed, .corruptRow: true
+        case .sqlFailed(let code, _): [SQLITE_CORRUPT, SQLITE_NOTADB].contains(code & 0xFF)
+        case .couldNotOpen, .newerSchema, .belongsToAnother, .retractionPassedToAdd: false
         }
     }
 }
