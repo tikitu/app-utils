@@ -15,6 +15,7 @@ the dependencies they need; the rest cost little more than a clone.
 | [BooleanRules](docs/BooleanRules.md) | `BooleanRules`, `BooleanRulesUI` | *and* / *or* / *not* filters over terms you define: a text syntax and a SwiftUI rule editor |
 | [CloudKitSyncConfiguration](docs/CloudKitSyncConfiguration.md) | `CloudKitSyncConfiguration` | guards for CloudKit sync: whether this build may sync, and whether the sync state on disk belongs to its environment |
 | [CommandInbox](docs/CommandInbox.md) | `CommandInbox` | a script drives the running app through its own commands, from a JSON file and a Darwin notification, strictly decoded, and reads back what each did |
+| [EventFeed](docs/EventFeed.md) | `EventFeed` | an app's events as an append-only SQLite feed another app reads: ids derived from content, so two devices write the same bytes; retractions only for removals the app reports, never by set difference |
 | [IntervalGoals](docs/IntervalGoals.md) | `IntervalGoals` | "how long since I last did it?": an interval on the calendar, the gap as a ratio of it against a target band, the usual gap, and when to send a gap's three reminders |
 | [ReminderScheduling](docs/ReminderScheduling.md) | `ReminderScheduling` | keeps pending local notifications equal to the reminders wanted, within the 64 limit, grouped by cycle so a closed gap's notifications go; and snooze |
 
